@@ -8,7 +8,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
-using Microsoft.EntityFrameworkCore.Query.Internal;
+using System.Net.Http;
+using Newtonsoft.Json;
+using System.Buffers.Text;
+using System.Text;
 
 namespace FunWithStyleTransfer.Pages
 {
@@ -17,6 +20,7 @@ namespace FunWithStyleTransfer.Pages
         private readonly ILogger<IndexModel> _logger;
         private readonly List<string> _allowedFileExtensions = new List<string>(){".jpg", ".png"};
         private readonly string _imageFolderPath = "wwwroot/Images";
+        private static readonly HttpClient client = new HttpClient();
 
         public IndexModel(ILogger<IndexModel> logger)
         {
@@ -38,7 +42,7 @@ namespace FunWithStyleTransfer.Pages
         }
 
 
-        public async Task<IActionResult> OnPostUploadAsync(List<IFormFile> files)
+        public async Task<IActionResult> OnPostUploadAsync()
         {
             //Temporary solution - Delete all contents in images folder
             System.IO.DirectoryInfo di = new DirectoryInfo("wwwroot/Images");
@@ -62,13 +66,38 @@ namespace FunWithStyleTransfer.Pages
             FilePath = Path.Combine(_imageFolderPath, FileName);
 
             //Load contents of iformfile into images folder
+            string img;
             using (var stream = System.IO.File.Create(FilePath))
             {
                 await FileUpload.FormFile.CopyToAsync(stream);
+                
             }
+            
+            
+            //Create base64 string representation of image and send to python web api for translation
+            string s;
+            using (var ms = new MemoryStream())
+            {
+                FileUpload.FormFile.CopyTo(ms);
+                var fileBytes = ms.ToArray();
+                s = Convert.ToBase64String(fileBytes);
+            }
+            string test = Convert.ToBase64String(System.IO.File.ReadAllBytes(FilePath));
+
+            var values = new Dictionary<string, string>();
+            values.Add("image", test);
+
+
+            string json = JsonConvert.SerializeObject(values, Formatting.Indented);
+
+            var content = new StringContent(json, Encoding.ASCII, "application/json");
+            var response = await client.PostAsync("http://local-host:8/api/styleTransfer", content);
+            var responseString = await response.Content.ReadAsStringAsync();
+
 
             return Page();
        }
+
     }
 
 
