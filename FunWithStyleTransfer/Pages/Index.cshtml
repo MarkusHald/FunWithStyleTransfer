@@ -1,0 +1,40 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome to FunWIthStyleTransfer</h1>
+    <p>
+        This site allows users to utilise pretrained deep learning models to perform style transfer on their own images!
+        Images must be either .jpg or .png and have to conform to size requirements of the selected model (See <a asp-page="/ModelSpecification">available models</a> for exact specifications)
+    </p>
+</div>
+
+<form enctype="multipart/form-data" method="post">
+    <dl>
+        <dt>
+            <label asp-for="FileUpload.FormFile"></label>
+        </dt>
+        <dd>
+            <input asp-for="FileUpload.FormFile" type="file" />
+            <span asp-validation-for="FileUpload.FormFile"></span>
+        </dd>
+    </dl>
+    <input asp-page-handler="Upload" class="btn" type="submit" value="Upload" />
+</form>
+
+<p>@Model.Result</p>
+
+@if (!(Model.FileUpload is null))
+{
+    @if (!(Model.FileUpload.FormFile.FileName is null))
+    {
+        <!--Table: column 1 image title + image , column 2 image title + ST image-->
+        <div class="result">
+            <p>You uploaded file: @Model.FileUpload.FormFile.FileName</p>
+            <img src="~/Images/@Model.FileName">
+        </div>
+    }
+}
